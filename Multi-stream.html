@@ -203,7 +203,74 @@
   .audio-meter .bar:last-child {
       background-color: #ff9800; /* Right channel (orange) */
   }
-  
+
+  .dark-mode {
+    background-color: rgb(245, 231, 231);
+    color: black;
+  }
+
+  .dark-mode #header,.dark-mode .stream-box {
+    background-color: rgb(219, 192, 192);
+    color: black;
+  }
+
+  .dark-mode #header label {
+    color: black;
+  }
+
+  /* The switch - the box around the slider */
+.switch {
+  font-size: 17px;
+  position: relative;
+  display: inline-block;
+  width: 3.5em;
+  height: 2em;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.slider {
+  --background: #4b494e;
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--background);
+  transition: .5s;
+  border-radius: 50px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 1.3em;
+  width: 1.3em;
+  border-radius: 50%;
+  left: 10%;
+  bottom: 15%;
+  box-shadow: inset 8px -4px 0px 0px #e2e2df;
+  background: var(--background);
+  transition: .5s;
+}
+
+input:checked + .slider {
+  background-color: #59595c;
+}
+
+input:checked + .slider:before {
+  transform: translateX(100%);
+  box-shadow: inset 15px -4px 0px 15px #e2e2df;
+}
+
   </style>
 </head>
 
@@ -223,6 +290,10 @@
         <label for="numCols">Columns:</label>
         <input type="number" id="numCols" class="form-control" min="1" value="3" style="width: 80px;">
         <button id="setLayout" class="btn btn-primary">Set Layout</button>
+        <label class="switch">
+            <input type="checkbox" onclick="darkMode()">
+            <span class="slider"></span>
+        </label>
       </div>  
     </div>
     <div class="isp-info" id="ispInfo">
@@ -235,6 +306,12 @@
   <script src="wsrtcplayer.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script>
+    
+    function darkMode() {
+        let element = document.body;
+        element.classList.toggle("dark-mode");
+    }
+
     async function fetchISPInfo() {
         try {
             const response = await fetch('https://ipinfo.io/json?token=89518cd2bfc944');
