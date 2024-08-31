@@ -35,7 +35,7 @@
       align-items: center;
       padding: 10px;
       background-color: #1e1e1e;
-      border-bottom: 1px solid #333;
+      border: 1px solid #333; /* change border-bottom to border */
     }
 
     #streamsContainer {
@@ -54,9 +54,9 @@
     .stream-box {
       display: flex;
       flex-direction: column;
-      border: 1px solid #333;
+      border: 1px solid #747171; /* change color  */
       
-      background-color: #1e1e1e;
+      background-color: #303030; /* change color */
       overflow: hidden;
       height: 100%;
       position: relative;
@@ -74,8 +74,7 @@
       width: 100%;
       height: 100%;
       object-fit: contain; /* Maintain aspect ratio of the video */
-      border-radius: 8px 8px 0 0;
-      position: relative;
+      position: relative;  /* deleted in this line boarder-radius */
       z-index: 0; /* Ensure video is above the audio meter background */
   }
 
@@ -205,17 +204,23 @@
   }
 
   .dark-mode {
-    background-color: rgb(245, 231, 231);
-    color: black;
+    background-color: #F5F5F5;
+    color: #495057;
   }
 
   .dark-mode #header,.dark-mode .stream-box {
-    background-color: rgb(219, 192, 192);
-    color: black;
+    background-color: #AAAAAA;
+    border: 1px solid #333333; /*input boarder*/ 
+    box-shadow: 1px 1px 2px #303030; /* input box shadow */
   }
 
   .dark-mode #header label {
-    color: black;
+    color: #333333;  /* change color */
+  }
+
+  .dark-mode .stream-box {
+      border: 1px solid #333333; /*input boarder*/ 
+      box-shadow: 1px 1px 2px #303030; /* input box shadow */
   }
 
   /* The switch - the box around the slider */
@@ -307,6 +312,7 @@ input:checked + .slider:before {
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script>
     
+    /* dark mode and light mode */
     function darkMode() {
         let element = document.body;
         element.classList.toggle("dark-mode");
