@@ -223,6 +223,7 @@
         <label for="numCols">Columns:</label>
         <input type="number" id="numCols" class="form-control" min="1" value="3" style="width: 80px;">
         <button id="setLayout" class="btn btn-primary">Set Layout</button>
+        <button onclick="downloadLogs()" class="btn btn-info">Error Logs</button>
       </div>  
     </div>
     <div class="isp-info" id="ispInfo">
@@ -270,6 +271,26 @@ function onEvent(type, data, index) {
     }
 }
 
+let logs = [];
+
+function logAlert(message, index) {
+    const now = new Date();
+    const options = {
+        timeZone: 'Asia/Manila', // Replace with your desired time zone
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    };
+    const timestamp = now.toLocaleString('en-US', options);
+    const logEntry = `[${timestamp}] Stream ${index}: ${message}`;
+    console.log(logEntry);
+    logs.push(logEntry); // Store the log entry in the array
+}
+
+
 function generateSdpUrl(appName, streamName, secretKey) {
     const domainName = 'pull.tripledg.live';
     const currentUnixTime = Math.floor(Date.now() / 1000);
@@ -286,6 +307,7 @@ function triggerConnectionLossAlert(index) {
     alertText.textContent = 'Alert: Connection Lost!';
     alertText.classList.add('show');
     alertSound.play();
+    logAlert('Connection Lost', index);  // Log the connection loss alert
 }
 
 function stopConnectionLossAlert(index) {
@@ -296,6 +318,7 @@ function stopConnectionLossAlert(index) {
     alertText.classList.remove('show');
     alertSound.pause();
     alertSound.currentTime = 0; // Reset the sound to the start
+    logAlert('Connection Resumed', index);  // Log the connection resume alert
 }
 
 function createStreams(rows, cols) {
@@ -541,6 +564,7 @@ function monitorStream(index, stream, alertSoundPath = 'default_alert_sound.mp3'
                 alertText.classList.add('show');
                 if (alertSound.paused) {
                     alertSound.play(); // Play the alert sound if it's not already playing
+                    logAlert('No Audio Detected', index);  // No Audio Detected! alert
                 }
             } else {
                 alertText.classList.remove('show');
@@ -573,6 +597,7 @@ function monitorStream(index, stream, alertSoundPath = 'default_alert_sound.mp3'
                 alertText.classList.add('show');
                 if (alertSound.paused) {
                     alertSound.play();
+                    logAlert('Black Screen Detected', index);  // Black Screen Detected! alert
                 }
             } else if (noAudioDuration < alertDuration) {
                 alertText.classList.remove('show');
@@ -591,6 +616,7 @@ function monitorStream(index, stream, alertSoundPath = 'default_alert_sound.mp3'
         analysers[index] = analyser;
     } else {
         console.log(`Stream ${index} has no audio track`);
+        logAlert('Stream has no audio track', index);  // Log no audio track alert
     }
 
     // Function to update the bitrate status
@@ -618,13 +644,26 @@ function checkStreamTracks(stream, index) {
         console.log(`Stream ${index} has audio`);
     } else {
         console.log(`Stream ${index} has no audio`);
+        logAlert('Stream has no audio track', index); 
     }
 
     if (videoTracks.length > 0) {
         console.log(`Stream ${index} has video`);
     } else {
         console.log(`Stream ${index} has no video`);
+        logAlert('Stream has no video track', index); 
     }
+}
+
+function downloadLogs() {
+    const logContent = logs.join('\n'); // Join logs into a single string with line breaks
+    const blob = new Blob([logContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Error-Logs.txt';
+    a.click();
+    URL.revokeObjectURL(url); // Clean up the URL object
 }
 
 document.getElementById('setLayout').addEventListener('click', function() {
