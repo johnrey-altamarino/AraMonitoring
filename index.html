@@ -274,6 +274,10 @@ function onEvent(type, data, index) {
 let logs = [];
 
 function logAlert(message, index) {
+    // Retrieve the stream name from the input field using the index
+    const streamNameInput = document.getElementById(`streamName${index}`);
+    const streamName = streamNameInput ? streamNameInput.value : `Stream ${index}`;  // Fallback to Stream Index if not found
+
     const now = new Date();
     const options = {
         timeZone: 'Asia/Manila', // Replace with your desired time zone
@@ -285,11 +289,12 @@ function logAlert(message, index) {
         second: '2-digit'
     };
     const timestamp = now.toLocaleString('en-US', options);
-    const logEntry = `[${timestamp}] Stream ${index}: ${message}`;
+    
+    // Update the log entry to include the stream name
+    const logEntry = `[${timestamp}] ${streamName}: ${message}`;
     console.log(logEntry);
-    logs.push(logEntry); // Store the log entry in the array
+    logs.push(logEntry);  // Store the log entry in the array
 }
-
 
 function generateSdpUrl(appName, streamName, secretKey) {
     const domainName = 'pull.tripledg.live';
@@ -432,7 +437,6 @@ function playStream(index) {
     }
 
     const videoElement = document.getElementById(`video${index}`);
-    //const signalUrl = document.getElementById(`signal_url${index}`).value;
     const appName = document.getElementById(`appName${index}`).value;
     const streamName = document.getElementById(`streamName${index}`).value;
     const secretKey = document.getElementById(`secretKey${index}`).value;
@@ -449,14 +453,17 @@ function playStream(index) {
     player.open(signalUrl);
     players[index] = player;
 
-    // Wait for the stream to be available
+    // Log whether the connection is successfully made
     videoElement.onloadeddata = () => {
+        console.log(`Stream ${index} loaded successfully`);
         const stream = videoElement.srcObject;
         if (stream) {
             // Check for audio and video tracks
             checkStreamTracks(stream, index);
             // Start monitoring after tracks are checked
             monitorStream(index, stream);
+        } else {
+            console.error(`Stream ${index} has no media.`);
         }
     };
 }
@@ -500,6 +507,9 @@ function monitorStream(index, stream, alertSoundPath = 'default_alert_sound.mp3'
 
     const audioContext = new(window.AudioContext || window.webkitAudioContext)();
     let source;
+    let lastBytesSent = 0;
+    let lastTimestamp = 0;
+
     if (stream.getAudioTracks().length > 0) {
         source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
@@ -542,8 +552,6 @@ function monitorStream(index, stream, alertSoundPath = 'default_alert_sound.mp3'
 
             const leftLevel = scaleAudioLevel(leftChannelAvg);
             const rightLevel = scaleAudioLevel(rightChannelAvg);
-
-            //console.log(`Stream ${index} Left Audio Level: ${leftLevel}, Right Audio Level: ${rightLevel}`);
 
             const leftBar = audioMeter.querySelector('.bar:first-child');
             const rightBar = audioMeter.querySelector('.bar:last-child');
@@ -604,10 +612,6 @@ function monitorStream(index, stream, alertSoundPath = 'default_alert_sound.mp3'
                 alertSound.pause();
                 alertSound.currentTime = 0;
             }
-
-            // Update bitrate status
-            //const bitrate = Math.floor(Math.random() * 2000) + 500; // Replace with actual bitrate calculation
-            //bitrateStatus.textContent = `Bitrate: ${bitrate} kbps`;
         }
 
         alerts[index] = setInterval(checkStream, 100);
@@ -620,14 +624,37 @@ function monitorStream(index, stream, alertSoundPath = 'default_alert_sound.mp3'
     }
 
     // Function to update the bitrate status
-    function updateBitrateStatus() {
-        const bitrate = Math.floor(Math.random() * 2000) + 500; // Replace with actual bitrate calculation
-        bitrateStatus.textContent = `Bitrate: ${bitrate} kbps`;
+    async function updateBitrateStatus() {
+        const pc = players[index] && players[index]._pc;  // Ensure we access the peer connection
+        if (pc) {
+            const stats = await pc.getStats();
+            //console.log('Stats Report:', stats);  // Log the entire stats object
+    
+            let foundInboundRTP = false;
+            stats.forEach(report => {
+                if (report.type === 'inbound-rtp' && report.mediaType === 'video') {
+                    foundInboundRTP = true;  // Confirm that the right stats are being found
+                    const bytesReceived = report.bytesReceived;
+                    const now = report.timestamp;
+    
+                    if (lastBytesSent && lastTimestamp) {
+                        const bitrate = (bytesReceived - lastBytesSent) * 8 / ((now - lastTimestamp) / 1000); // Calculate bits per second
+                        bitrateStatus.textContent = `Bitrate: ${Math.round(bitrate / 1000)} kbps`; // No decimals in bitrate display // Update bitrate UI
+                        //console.log(`Bitrate for stream ${index}: ${(bitrate / 1000).toFixed(2)} kbps`);
+                    }
+    
+                    lastBytesSent = bytesReceived;
+                    lastTimestamp = now;
+                }
+            });
+    
+            if (!foundInboundRTP) {
+                console.log("No inbound-rtp stats found for video");
+            }
+        } else {
+            console.log("No PeerConnection found for this stream.");
+        }
     }
-
-    // Update bitrate status immediately when the script runs
-    updateBitrateStatus();
-
     // Set an interval to update the bitrate status every second (1000 milliseconds)
     setInterval(updateBitrateStatus, 1000);
 
@@ -636,6 +663,7 @@ function monitorStream(index, stream, alertSoundPath = 'default_alert_sound.mp3'
     };
 }
 
+
 function checkStreamTracks(stream, index) {
     const audioTracks = stream.getAudioTracks();
     const videoTracks = stream.getVideoTracks();
@@ -643,15 +671,13 @@ function checkStreamTracks(stream, index) {
     if (audioTracks.length > 0) {
         console.log(`Stream ${index} has audio`);
     } else {
-        console.log(`Stream ${index} has no audio`);
-        logAlert('Stream has no audio track', index); 
+        console.error(`Stream ${index} has no audio`);
     }
 
     if (videoTracks.length > 0) {
         console.log(`Stream ${index} has video`);
     } else {
-        console.log(`Stream ${index} has no video`);
-        logAlert('Stream has no video track', index); 
+        console.error(`Stream ${index} has no video`);
     }
 }
 
@@ -669,7 +695,7 @@ function downloadLogs() {
     const timestamp = now.toLocaleString('en-US', options)
                         .replace(/[/,:]/g, '-'); // Replace invalid characters for filenames
 
-    const filename = `Error-Logs-${timestamp}.txt`;
+    const filename = `Alert-Logs-${timestamp}.txt`;
     const blob = new Blob([logContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
