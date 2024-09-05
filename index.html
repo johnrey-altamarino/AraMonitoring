@@ -695,7 +695,7 @@ function downloadLogs() {
     const timestamp = now.toLocaleString('en-US', options)
                         .replace(/[/,:]/g, '-'); // Replace invalid characters for filenames
 
-    const filename = `Alert-Logs-${timestamp}.txt`;
+    const filename = `Monitoring-Logs-${timestamp}.txt`;
     const blob = new Blob([logContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
