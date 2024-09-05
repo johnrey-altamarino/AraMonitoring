@@ -657,7 +657,7 @@ function checkStreamTracks(stream, index) {
 
 function downloadLogs() {
     const logContent = logs.join('\n'); // Join logs into a single string with line breaks
-    const now = new Date();
+    const now = new Date();             // Added date and time to filename when exported
     const options = {
         year: 'numeric',
         month: '2-digit',
